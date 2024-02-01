@@ -10,83 +10,60 @@ const userInput = document.querySelector('.data-select');
 const userList = document.querySelector('.gallery-list');
 const activeLoader = document.querySelector('.loader');
 
-userInput.addEventListener('submit', e => {
+const PIXABAY_API_KEY = '42133778-4b8d89235d578f5a93c0f41d5';
+
+userInput.addEventListener('submit', async (e) => {
   e.preventDefault();
   const userInputValue = userInput.elements.request.value.trim();
   userList.innerHTML = '';
   activeLoader.classList.toggle('loader-active');
 
-  fetchGallery(userInputValue)
-    .then(data => {
-      renderGallery(data);
-    })
-    .catch(() => {
-      iziToast.error({
-        message: 'Something wrong. Please try again later!',
-        messageColor: '#FAFAFB',
-        messageSize: '16',
-        messageLineHeight: '20',
-        position: 'topRight',
-        backgroundColor: '#EF4040',
-        iconUrl: icon,
-        icon: 'fa-regular',
-        iconColor: '#FAFAFB',
-        maxWidth: '500',
-        transitionIn: 'bounceInLeft',
-      });
-    })
-    .finally(() => {
-      activeLoader.classList.toggle('loader-active');
-      userInput.reset();
+  try {
+    const searchParams = new URLSearchParams({
+      key: PIXABAY_API_KEY,
+      q: userInputValue,
+      image_type: 'photo',
+      orientation: 'horizontal',
+      safesearch: true,
     });
-});
 
-const searchParams = new URLSearchParams({
-  image_type: 'photo',
-  orientation: 'horizontal',
-  safesearch: true,
-});
+    const data = await fetchGallery(searchParams);
 
-function fetchGallery(userRequest) {
-  return fetch(
-    `https://pixabay.com/api/?key=41825347-2a0e6255edbe790f7737a6334&q=${userRequest}&${searchParams}`
-  ).then(response => {
-    if (!response.ok) {
-      throw new Error(response.status);
+    if (data.totalHits > 0) {
+      renderGallery(data);
+    } else {
+      showErrorToast('Sorry, there are no images matching your search query. Please try again!');
     }
-    return response.json();
-  });
+  } catch (error) {
+    handleFetchError(error);
+  } finally {
+    activeLoader.classList.toggle('loader-active');
+    userInput.reset();
+  }
+});
+
+async function fetchGallery(searchParams) {
+  const response = await fetch(`https://pixabay.com/api/?${searchParams.toString()}`);
+
+  if (!response.ok) {
+    throw new Error(response.status);
+  }
+
+  return response.json();
 }
 
 function renderGallery(data) {
-  if (data.totalHits <= 0) {
-    iziToast.error({
-      message:
-        'Sorry, there are no images matching </br> your search query. Please try again!',
-      messageColor: '#FAFAFB',
-      messageSize: '16',
-      messageLineHeight: '20',
-      position: 'topRight',
-      backgroundColor: '#EF4040',
-      iconUrl: icon,
-      iconColor: '#FAFAFB',
-      maxWidth: '500',
-      closeOnClick: true,
-      close: false,
-    });
-  }
   const markup = data.hits
-    .map(hit => {
+    .map((hit) => {
       return `<li class="gallery-item">
           <a class="gallery-link" href="${hit.largeImageURL}">
-    	      <img
-		          class="gallery-image"
-		          src="${hit.webformatURL}"
-		          alt="${hit.tags}"
+            <img
+              class="gallery-image"
+              src="${hit.webformatURL}"
+              alt="${hit.tags}"
               width="360"
               height="200"
-              ;
-    	      />
+            />
             <ul class="info-list">
               <li class="info-item">
                 <h class="item-title">Likes</h>
@@ -105,10 +82,11 @@ function renderGallery(data) {
                 <p class="item-content">${hit.downloads}</p>
               </li>
             </ul>
-  		    </a>
+          </a>
         </li>`;
     })
     .join('');
+
   userList.insertAdjacentHTML('beforeend', markup);
 
   const lightbox = new SimpleLightbox('.gallery-list a', {
@@ -116,4 +94,30 @@ function renderGallery(data) {
     captionDelay: 250,
   });
   lightbox.refresh();
+}
+
+function showErrorToast(message) {
+  iziToast.error({
+    message,
+    messageColor: '#FAFAFB',
+    messageSize: '16',
+    messageLineHeight: '20',
+    position: 'topRight',
+    backgroundColor: '#EF4040',
+    iconUrl: icon,
+    icon: 'fa-regular',
+    iconColor: '#FAFAFB',
+    maxWidth: '500',
+    transitionIn: 'bounceInLeft',
+  });
+}
+
+function handleFetchError(error) {
+  if (error.message.includes('404')) {
+    showErrorToast('Oops! The requested resource was not found.');
+  } else if (error.message.includes('500')) {
+    showErrorToast('Oops! Something went wrong on the server. Please try again later.');
+  } else {
+    showErrorToast('Oops! An unexpected error occurred. Please try again.');
+  }
 }
