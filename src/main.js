@@ -12,6 +12,11 @@ const activeLoader = document.querySelector('.loader');
 
 const PIXABAY_API_KEY = '42133778-4b8d89235d578f5a93c0f41d5';
 
+const lightbox = new SimpleLightbox('.gallery-list a', {
+  captionsData: 'alt',
+  captionDelay: 250,
+});
+
 userInput.addEventListener('submit', async (e) => {
   e.preventDefault();
   const userInputValue = userInput.elements.request.value.trim();
@@ -66,19 +71,19 @@ function renderGallery(data) {
             />
             <ul class="info-list">
               <li class="info-item">
-                <h class="item-title">Likes</h>
+                <h2 class="item-title">Likes</h2>
                 <p class="item-content">${hit.likes}</p>
               </li>
               <li class="info-item">
-                <h class="item-title">Views</h>
+                <h2 class="item-title">Views</h2>
                 <p class="item-content">${hit.views}</p>
               </li>
               <li class="info-item">
-                <h class="item-title">Comments</h>
+                <h2 class="item-title">Comments</h2>
                 <p class="item-content">${hit.comments}</p>
               </li>
               <li class="info-item">
-                <h class="item-title">Downloads</h>
+                <h2 class="item-title">Downloads</h2>
                 <p class="item-content">${hit.downloads}</p>
               </li>
             </ul>
@@ -89,10 +94,6 @@ function renderGallery(data) {
 
   userList.insertAdjacentHTML('beforeend', markup);
 
-  const lightbox = new SimpleLightbox('.gallery-list a', {
-    captionsData: 'alt',
-    captionDelay: 250,
-  });
   lightbox.refresh();
 }
 
